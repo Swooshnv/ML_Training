@@ -27,7 +27,7 @@ X = torch.from_numpy(X).type(torch.float)
 y = torch.from_numpy(y).type(torch.float)
 
 ### Train test splitting the tensors
-X_train, y_train, X_test, y_test = train_test_split(X, 
+X_train, X_test, y_train, y_test = train_test_split(X, 
                                                     y, 
                                                     test_size = 0.2,
                                                     random_state = 42)
@@ -44,12 +44,14 @@ class CircleModelV1(nn.Module):
         return self.layer_2(self.layer_1(x))
 
 model_0 = CircleModelV1().to(device)
-print(next(model_0.parameters()).device)
+#print(next(model_0.parameters()).device)
 
 ### Replicate model using nn.sequential
+"""
 model_0 = nn.Sequential(nn.Linear(in_features=2, out_features=5),
                         nn.Linear(in_features=5, out_features=1)).to(device)
 print(f"Replica: {next(model_0.parameters()).device}")
+"""
 
 ### Setting up loss function and optimizer
 loss_fn = nn.BCEWithLogitsLoss()
@@ -61,3 +63,43 @@ def accuracy_fn(y_true, y_preds):
     acc = (correct / len(y_preds) * 100)
     return acc
 
+### Test data evaluation
+model_0.eval()
+with torch.inference_mode():
+    y_logits = model_0(X_test.to(device))[:5]
+print(y_logits)
+print(y_test[:5])
+
+y_pred_probs = torch.sigmoid(y_logits)
+print(f"Sigmoid activation: {y_pred_probs}")
+print(f"Rounded outputs:{torch.round(y_pred_probs)}")
+
+### Building training/testing loop
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+epochs = 100
+X_train, y_train = X_train.to(device), y_train.to(device)
+X_test, y_test = X_test.to(device), y_test.to(device)
+for epoch in range(epochs):
+    model_0.train()
+    y_logits = model_0(X_train).squeeze()
+    y_pred = torch.round(torch.sigmoid(y_logits))
+    acc = accuracy_fn(y_true = y_train,
+                      y_preds = y_pred)
+    loss = loss_fn(y_logits,
+                   y_train)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    model_0.eval()
+    with torch.inference_mode():
+        y_test_preds = model_0(X_test).squeeze()
+        rounded = torch.round(torch.sigmoid(y_test_preds))
+        
+        test_loss = loss_fn(y_test_preds,
+                    y_test)
+        test_acc = accuracy_fn(y_true = y_test,
+                        y_preds = rounded)
+    if epoch % 10 == 0:
+        print(f"Epoch: {epoch} | loss: {loss:.5f} | acc: {acc:.5f}% | Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}%")
