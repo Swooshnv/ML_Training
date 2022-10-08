@@ -53,3 +53,11 @@ print(f"Replica: {next(model_0.parameters()).device}")
 
 ### Setting up loss function and optimizer
 loss_fn = nn.BCEWithLogitsLoss()
+optimizer = torch.optim.SGD(params = model_0.parameters(),
+                            lr = 0.1)
+
+def accuracy_fn(y_true, y_preds):
+    correct = torch.eq(y_true, y_preds).sum().item()
+    acc = (correct / len(y_preds) * 100)
+    return acc
+
