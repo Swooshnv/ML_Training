@@ -117,5 +117,32 @@ model_1 = CircleModelV2().to(device)
 
 loss_fn_1 = nn.BCEWithLogitsLoss()
 optimizer_1 = torch.optim.SGD(params = model_1.parameters(),
-                              lr = 0.01)
+                              lr = 0.1)
 
+torch.manual_seed(42)
+torch.cuda.manual_seed(42)
+epochs = 1000
+X_train, y_train = X_train.to(device), y_train.to(device)
+X_test, y_test = X_test.to(device), y_test.to(device)
+
+print("***** Model_1 Training/testing loop *****")
+for epoch in range(epochs):
+    model_1.train()
+    y_preds_1 = model_1(X_train).squeeze()
+    y_round = torch.round(torch.sigmoid(y_preds_1))
+    loss_1 = loss_fn_1(y_round, y_train)
+    acc = accuracy_fn(y_true = y_train,
+                      y_preds = y_round)
+    optimizer_1.zero_grad()
+    loss_1.backward()
+    optimizer_1.step()
+
+    model_1.eval()
+    with torch.inference_mode():
+        test_logits = model_1(X_test).squeeze()
+        test_round = torch.round(torch.sigmoid(test_logits))
+        test_loss_1 = loss_fn_1(test_round, y_test)
+        test_acc_1 = accuracy_fn(y_true = y_test, y_preds = test_round)
+    
+    if epoch % 50 == 0:
+        print(f"Epoch: {epoch} | loss: {loss_1:.5f} | accuracy: {acc:.2f}% | test loss: {test_loss_1:.5f} | test accuracy: {test_acc_1:.2f}%")
