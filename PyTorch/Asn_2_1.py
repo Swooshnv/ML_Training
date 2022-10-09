@@ -103,3 +103,19 @@ for epoch in range(epochs):
                         y_preds = rounded)
     if epoch % 10 == 0:
         print(f"Epoch: {epoch} | loss: {loss:.5f} | acc: {acc:.5f}% | Test loss: {test_loss:.5f} | Test acc: {test_acc:.5f}%")
+
+class CircleModelV2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer_1 = nn.Linear(in_features = 2, out_features = 10)
+        self.layer_2 = nn.Linear(in_features = 10, out_features = 10)
+        self.layer_3 = nn.Linear(in_features = 10, out_features = 1)
+    def forward(self, x):
+        return self.layer_3(self.layer_2(self.layer_1(x)))
+
+model_1 = CircleModelV2().to(device)
+
+loss_fn_1 = nn.BCEWithLogitsLoss()
+optimizer_1 = torch.optim.SGD(params = model_1.parameters(),
+                              lr = 0.01)
+
