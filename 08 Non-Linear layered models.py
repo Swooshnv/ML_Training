@@ -55,7 +55,7 @@ torch.manual_seed(42)
 torch.cuda.manual_seed(42)
 X_train, y_train = X_train.to(device), y_train.to(device)
 X_test, y_test = X_test.to(device), y_test.to(device)
-epochs = 1000
+epochs = 2000
 
 for epoch in range(epochs):
     model_2.train()
