@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torchmetrics import Accuracy
 import matplotlib.pyplot as plt
 import sklearn 
 from sklearn.datasets import make_blobs
@@ -50,13 +51,13 @@ class blobClassificationV0(nn.Module):
 model_0 = blobClassificationV0(input_features = 2, output_features = 4).to(device)
 loss_fn = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(params = model_0.parameters(),
-                            lr = 0.1)
+                            lr = 0.3)
 X_train, y_train = X_train.to(device), y_train.to(device)
 X_test, y_test = X_test.to(device), y_test.to(device)
 
 torch.manual_seed(42)
 torch.cuda.manual_seed(42)
-epochs = 1000
+epochs = 2000
 for epoch in range(epochs):
     model_0.train()
     y_logits = model_0(X_train)
@@ -77,6 +78,7 @@ for epoch in range(epochs):
         if epoch % 50 == 0:
             print(f"Epoch: {epoch} | Loss: {loss:.5f} | Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f} | Test accuracy: {test_acc:.2f}%")
 
+"""
 plt.figure(figsize = (12, 6))
 plt.subplot(1, 2, 1)
 plt.title("Train")
@@ -85,3 +87,7 @@ plt.subplot(1, 2, 2)
 plt.title("Test")
 plot_decision_boundary(model_0, X_test, y_test)
 plt.show()
+"""
+tm_acc = Accuracy().to(device)
+
+print(f"Torchmetrics Accuracy: {tm_acc(y_preds, y_train)}")
