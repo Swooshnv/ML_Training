@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import sklearn 
 from sklearn.datasets import make_blobs
 from sklearn.model_selection import train_test_split
+from helper_functions import plot_predictions, plot_decision_boundary #helper function sourced from: https://github.com/mrdbourke/pytorch-deep-learning/blob/main/helper_functions.py
 
 NUM_CLASSES = 4
 NUM_FEATURES = 2
@@ -75,3 +76,12 @@ for epoch in range(epochs):
 
         if epoch % 50 == 0:
             print(f"Epoch: {epoch} | Loss: {loss:.5f} | Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f} | Test accuracy: {test_acc:.2f}%")
+
+plt.figure(figsize = (12, 6))
+plt.subplot(1, 2, 1)
+plt.title("Train")
+plot_decision_boundary(model_0, X_train, y_train)
+plt.subplot(1, 2, 2)
+plt.title("Test")
+plot_decision_boundary(model_0, X_test, y_test)
+plt.show()
