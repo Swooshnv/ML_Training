@@ -122,13 +122,13 @@ for epoch in tqdm(range(epochs)):
         model_0.train()
         preds = model_0(X)
         loss = loss_fn(preds, y)
-        train_loss =+ loss
+        train_loss += loss
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        if batch % 300 == 0:
-            print(f"Looked at {(batch * len(X) / (len(train_dataloader.dataset)))} samples.")
+        if batch % 96 == 0:
+            print(f"Looked at {batch * len(X)} / {(len(train_dataloader.dataset))} samples.", end = "\r")
     train_loss /= len(train_dataloader)
 
     test_loss, test_acc = 0, 0
@@ -136,7 +136,7 @@ for epoch in tqdm(range(epochs)):
     with torch.inference_mode():
         for X_test, y_test in test_dataloader:
             test_preds = model_0(X_test)
-            test_loss =+ loss_fn(test_preds, y_test)
+            test_loss += loss_fn(test_preds, y_test)
             test_acc = accuracy_fn(y_true = y_test, y_preds = test_preds.argmax(dim = 1))
         test_loss /= len(test_dataloader)
         test_acc /= len(test_dataloader)
@@ -146,3 +146,28 @@ train_time_end_on_cpu = timer()
 total_train_time_model_0 = print_train_time(start = train_time_start_on_cpu,
                                             end = train_time_end_on_cpu,
                                             device = str(next(model_0.parameters()).device))
+
+def eval_model(model: torch.nn.Module,
+               data_loader: torch.utils.data.DataLoader,
+               loss_fn: torch.nn.Module,
+               accuracy_fn):
+    loss, acc = 0, 0
+    model.eval()
+    with torch.inference_mode():
+        for X, y in tqdm(data_loader):
+            preds = model(X)
+            loss += loss_fn(preds, y)
+            acc += accuracy_fn(y_true = y, y_preds = preds.argmax(dim = 1))
+        loss /= len(data_loader)
+        acc /= len(data_loader)
+
+    return {"Model Name": model.__class__.__name__,
+            "Model loss": loss.item(),
+            "model_acc": acc}
+
+model_0_results = eval_model(model = model_0,
+                             data_loader = test_dataloader,
+                             loss_fn = loss_fn,
+                             accuracy_fn = accuracy_fn)
+print(model_0_results)
+
