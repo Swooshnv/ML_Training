@@ -5,8 +5,8 @@ from torchvision import datasets
 from torchvision import transforms
 from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
-from torchmetrics import Accuracy
 from timeit import default_timer as timer
+from tqdm.auto import tqdm
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 print(torch.__version__)
@@ -74,6 +74,11 @@ output = flatten_model(x)
 print(f"shape before flattening: {x.shape}")
 print(f"shape after flattening: {output.shape}")
 
+def accuracy_fn(y_true, y_preds):
+    correct = torch.eq(y_true, y_preds).sum().item()
+    acc = (correct / len(y_preds) * 100)
+    return acc
+
 class FashionMNISTModelV0(nn.Module):
     def __init__(self,
                  input_features : int,
@@ -107,3 +112,37 @@ def print_train_time(start: float,
     print(f"Train time on {device}: {total_time:.3f}")
     return total_time
 
+### Creating a training/testing loop with batches of data
+train_time_start_on_cpu = timer()
+epochs = 3
+for epoch in tqdm(range(epochs)):
+    print(f"\nEpoch: {epoch}\n-----")
+    train_loss = 0
+    for batch, (X, y) in enumerate(train_dataloader):
+        model_0.train()
+        preds = model_0(X)
+        loss = loss_fn(preds, y)
+        train_loss =+ loss
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch % 300 == 0:
+            print(f"Looked at {(batch * len(X) / (len(train_dataloader.dataset)))} samples.")
+    train_loss /= len(train_dataloader)
+
+    test_loss, test_acc = 0, 0
+    model_0.eval()
+    with torch.inference_mode():
+        for X_test, y_test in test_dataloader:
+            test_preds = model_0(X_test)
+            test_loss =+ loss_fn(test_preds, y_test)
+            test_acc = accuracy_fn(y_true = y_test, y_preds = test_preds.argmax(dim = 1))
+        test_loss /= len(test_dataloader)
+        test_acc /= len(test_dataloader)
+    print(f"\nTrain loss: {train_loss:.4f} | Test loss: {test_loss:.4f} | Test accuracy: {test_acc:.4f}")
+
+train_time_end_on_cpu = timer()
+total_train_time_model_0 = print_train_time(start = train_time_start_on_cpu,
+                                            end = train_time_end_on_cpu,
+                                            device = str(next(model_0.parameters()).device))
