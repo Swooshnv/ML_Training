@@ -31,12 +31,12 @@ print(f"Length of training data: {len(train_data)}\nLength of testing data: {len
 class_names = train_data.classes
 class_to_idx = train_data.class_to_idx
 train_dataloader = torch.utils.data.DataLoader(
-    datasets = train_data,
+    dataset = train_data,
     batch_size = BATCH_SIZE,
     shuffle = True
 )
 test_dataloader = torch.utils.data.DataLoader(
-    datasets = test_data,
+    dataset = test_data,
     batch_size = BATCH_SIZE,
     shuffle = False
 )
@@ -118,3 +118,47 @@ class FashionMNISTCNNV0(nn.Module):
         x = self.classifer(x)
         return x
 
+model_0 = FashionMNISTCNNV0(input_shape = 1,
+                            hidden_units = 10,
+                            output_shape = len(class_names)).to(device)
+
+def train_model(model: torch.nn.Module,
+                data_loader: torch.utils.data.DataLoader,
+                loss_fn: torch.nn.Module,
+                optimizer: torch.optim.Optimizer,
+                accuracy_fn,
+                device: torch.device = device):
+    train_loss, train_acc = 0, 0
+    model.train()
+    for batch, (X, y) in enumerate(data_loader):
+        X, y = X.to(device), y.to(device)
+        preds = model(X)
+        loss = loss_fn(preds, y)
+        train_loss += loss
+        train_acc += accuracy_fn(y_true = y, y_preds = preds.argmax(dim = 1))
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        if batch % 96 == 0:
+            print(f"Looked at {batch * len(X)} / {len(data_loader.dataset)} samples.", end = "\r")
+    train_loss /= len(data_loader)
+    train_acc /= len(data_loader)
+    print(f"Train loss: {train_loss:.5f}\nTrain accuracy: {train_acc:.2f}%")
+
+def test_step(model: torch.nn.Module,
+              data_loader: torch.utils.data.DataLoader,
+              loss_fn: torch.nn.Module,
+              accuracy_fn,
+              device: torch.device = device):
+    test_loss, test_acc = 0, 0
+    model.eval()
+    with torch.inference_mode():
+        for X, y in data_loader:
+            X, y = X.to(device), y.to(device)
+            preds = model(X)
+            test_loss += loss_fn(preds, y)
+            test_acc += accuracy_fn(y_true = y, y_preds = preds.argmax(dim = 1))
+        test_loss /= len(data_loader)
+        test_acc /= len(data_loader)
+        print(f"Test loss: {test_loss:.5f}\nTest accuracy: {test_acc:.2f}%")
+        
