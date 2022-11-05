@@ -7,10 +7,16 @@ from torchvision import transforms
 from torchvision.transforms import ToTensor
 from timeit import default_timer as timer
 from tqdm.auto import tqdm
+from pathlib import Path
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 BATCH_SIZE = 32
+MODEL_PATH = Path("models")
+MODEL_PATH.mkdir(parents = True,
+                 exist_ok = True)
+MODEL_NAME = "12_MODEL.pth"
+MODEL_SAVE_PATH = MODEL_PATH / MODEL_NAME
 
 train_data = datasets.FashionMNIST(
     root = "data",
@@ -190,3 +196,7 @@ train_time_end = timer()
 total_train_time = print_time(start = train_time_start,
                               end = train_time_end,
                               device = device)
+
+print(f"Saving model to: {MODEL_SAVE_PATH}")
+torch.save(obj = model_0.state_dict(),
+           f = MODEL_SAVE_PATH)
