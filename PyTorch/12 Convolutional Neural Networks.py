@@ -5,6 +5,8 @@ import torchvision
 from torchvision import datasets
 from torchvision import transforms
 from torchvision.transforms import ToTensor
+from timeit import default_timer as timer
+from tqdm.auto import tqdm
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
@@ -106,23 +108,28 @@ class FashionMNISTCNNV0(nn.Module):
         self.classifer = nn.Sequential(
             nn.Flatten(),
             nn.Linear(
-                in_features = hidden_units * 0,
+                in_features = hidden_units * 7 * 7,
                 out_features = output_shape
             )
         )
     def forward(self, x):
         x = self.conv_block_1(x)
-        print(x.shape)
+        #print(f"Output shape of conv_block_1: {x.shape}")
         x = self.conv_block_2(x)
-        print(x.shape)
+        #print(f"Output shape of conv_block_2: {x.shape}")
         x = self.classifer(x)
+        #print(f"Output shape of classifier: {x.shape}")
         return x
 
 model_0 = FashionMNISTCNNV0(input_shape = 1,
                             hidden_units = 10,
                             output_shape = len(class_names)).to(device)
 
-def train_model(model: torch.nn.Module,
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.SGD(params = model_0.parameters(),
+                            lr = 0.1)
+
+def train_step(model: torch.nn.Module,
                 data_loader: torch.utils.data.DataLoader,
                 loss_fn: torch.nn.Module,
                 optimizer: torch.optim.Optimizer,
@@ -162,3 +169,24 @@ def test_step(model: torch.nn.Module,
         test_acc /= len(data_loader)
         print(f"Test loss: {test_loss:.5f}\nTest accuracy: {test_acc:.2f}%")
         
+epochs = 5
+train_time_start = timer()
+for epoch in tqdm(range(epochs)):    
+    print(f"\nEpoch: {epoch}\n---------")
+    train_step(model = model_0, 
+                data_loader = train_dataloader,
+                loss_fn = loss_fn,
+                optimizer = optimizer,
+                accuracy_fn = accuracy_fn,
+                device = device)
+
+    test_step(model = model_0,
+            data_loader = test_dataloader,
+            loss_fn = loss_fn,
+            accuracy_fn = accuracy_fn,
+            device = device)
+
+train_time_end = timer()
+total_train_time = print_time(start = train_time_start,
+                              end = train_time_end,
+                              device = device)
